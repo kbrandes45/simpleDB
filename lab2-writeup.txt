@@ -1,0 +1,46 @@
+Kathleen Brandes - Lab 2 Write Up
+
+For the lab I made a couple of design choices when implementing methods in the aggregate operator, the join 
+operator, and the buffer pool. For the aggregate operator iterator, I decided to have it accumulate the 
+entire result of the specific aggregator (integer/string) within the open() method of the aggregate 
+iterator all before calling open() for that iterator. This is such that it can amass the final result and 
+the results will be accurate for the entire dataset and not updating while also being looked at. 
+
+For my join operator, I implemented a nested loop join within the iterator for the join. I track the most 
+recent “left tuple” (the tuple from the first table’s iterator) and iterate through the entire second table, 
+joining two tuples when the predicate matches, or continuing through the iteration if none match the 
+predicate. If for a given left tuple, no “right tuples” (from table two) match, then the iterator will 
+update this left tuple to the next one in the table and repeat the process. Ultimately, the join operator 
+iterator will return a tuple with a new tuple schema containing all fields from both the left and right 
+tuples (no duplicates are removed). This implementation was chosen because it allowed me to not have to 
+entirely check the outer table 1 every time the iterator was called because it tracked the current child. 
+Additionally, this method is reliable and well tested, which is why I did not implement something different.
+
+For my buffer pool eviction policy, I chose to implement a random eviction policy. The java hashmap will 
+iterate over its pageId keyset in a random order, so when the eviction policy is called to remove a page, 
+the policy removes the page from the buffer pool and flushes it to disk if dirty. The eviction policy is 
+only called when a page needs to be added to the buffer pool but it is at maximum capacity. I chose this 
+eviction policy because it was simple and effective and requires no additional information to be stored 
+about access frequency and history. However in choosing this, I do potentially remove/flush pages that are 
+frequently used (and therefore re-added to the buffer pool) and could then be writing to disk often when 
+evicting these pages.
+
+I made no significant changes to the API for this lab besides adding some helper functions. I  particular, 
+I added a private method to HeapFile class that determines the next page with a empty slot available within 
+the file that it can write to. This is called in the insertTuple method. Additionally, within the heapPage 
+class, I added boolean flag and transactionId private attributes to be used in denoting and setting a page 
+as dirty by the buffer pool. As well, for the integer aggregator, I created two hashmaps to track the 
+aggregated values and to track how many tuples have contributed to these values (relevant for computing the 
+average) [the string aggregator only tracks the count as its “aggregated values” hashmap]. There are also 
+methods that generate the output’s tuple schema, and for the case of the integer operator, since it can 
+have many different operations, I made a method that checks the current operation of the query and applies 
+the necessary math/comparisons to update the aggregated value in the hashmap. 
+
+There are no missing or incomplete elements from my code. It successfully passed all JUnit tests for 
+lab 2 (including all system tests stated in the lab handout). 
+
+I spent approximately 12 hours on this lab. I had trouble finding a bug caused by my implementation for 
+insert/delete that I thought stemmed from incorrect implementation of either heap page/file or buffer pool 
+writes, despite all of these cases passing their unit tests. However, I was able to get help at office 
+hours and find it was simply forgetting to reset a boolean value within insert/delete. Otherwise, nothing 
+in this lab was particularly difficult or time consuming. 

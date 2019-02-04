@@ -1,0 +1,53 @@
+Kathleen Brandes - Lab 1 Writeup
+
+For this lab, I implemented classes to represent Tuples and their schema, 
+as well as a Heap Page to store and read the tuples from, a Heap File to keep 
+pages in, the Buffer pool to keep pages in memory, and the catalog to keep all 
+of the instances of heap file. Additionally, I have implemented iterators for 
+tuples, pages, and files. Lastly, I implemented the sequence scan operator with 
+the necessary iterator methods (uses the iterator from the heapfile it is 
+scanning) within the class such that the database can use the index access method 
+when executing queries.
+
+One design choice I made was to use HashMaps when storing information with keys, 
+such as mapping table name/id to the given instance of a table in the catalog, 
+since these provide reliable hashing and are efficient. 
+
+Another unique design component I had was how I identified if a tuple slot was 
+empty in a Heap Page. I used a left shift to create a byte representation that had 
+a 1 in the bit position of the current slot number and 0’s everywhere else. Using 
+this, I did a bitwise “and” with the specific word in the header, and we then know 
+the given slot is empty if the result of this “and” is not > 0 because the tuple 
+slot would have a 1 in the header as well if it were occupied.
+
+Besides adding necessary attributes to each of the implemented classes, the only 
+major API change I made was adding classes for the HeapPage and HeapFile iterators 
+and a private class for representing tables in the catalog. I created a new public 
+class for HeapPage, called HPIterator, which implements a tuple iterator and 
+ignores and skips empty tuples when calling next() or hasNext() and throws an 
+exception error if you try to remove the Heap Page the iterator points to. 
+
+The heap file iterator was a private class within the HeapFile class, and it 
+implements a dbFileIterator. In particular, the open() method creates a tuple 
+iterator for the current page the heap file iterator is pointing to, and it uses 
+this tuple iterator throughout to return tuples on the current page of the file. 
+Both iterators follow the standards for the interfaces they implement. 
+
+The last significant API change I made was to add a private class for representing 
+the information associated with a table (DB File, name, primary key field) and 
+using the DBFile id as the table’s id within the catalog such that it can all be 
+together and I will not have to worry about insertion/deletion issues changing 
+only one component of a table.
+
+There are no missing or incomplete elements from my code; it successfully passed 
+all JUnit tests for lab 1 and also outputs the scanned values of the tuples from 
+the end-to-end simple query test (2.7).
+
+I spent about around 15-18 hours working on this lab. I found it conceptually 
+challenging initially, especially since we learned much more about key components 
+(such as iterators) for the database management system in later lectures after I 
+completed large parts of the lab. As well, I have no experience coding in Java 
+besides an IAP class I took two years ago; therefore, the actual coding took a 
+bit of time because while I knew what I wanted to do on a high level, it took me a 
+while to learn the proper syntax and semantics in java.
+ 

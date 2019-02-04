@@ -1,0 +1,49 @@
+Lab 4 Write Up
+Kathleen Brandes
+
+One design decision (and API change) that I made during this lab was to create a new class, 
+PageLocker, to hold state about which transactions have shared or exclusive locks on different 
+tables and grant/deny access for each transactions getPage requests. I decided to have page level 
+locking granularity to have a relatively small overhead of granting and releasing locks (in 
+comparison to the overhead of tuple level locks), but also allows for a decent amount of 
+concurrency between transactions (in comparison to table-level locks) such that the database can 
+run queries relatively efficiently. 
+
+The PageLocker class serves as a lock manager for the database. It keeps hashmaps tracking which 
+a page’s exclusive lock and a page’s shared slocks (kept in a set). These pageId-keyed hashmaps 
+are kept because it is easy to tell what locks are held over a page when a new transaction is 
+attempting to get a page lock. Additionally, it keeps hashmaps tracking a transaction’s exclusive 
+locks and shared locks (in separate sets). These transaction-keyed hashmaps are kept such that 
+when a transaction is aborted, it is easy and efficient to release all of the transaction’s page 
+locks. The PageLocker class also has methods to add a shared lock/ remove a shared lock, as well 
+as add a exclusive lock and remove an exclusive lock all for a given transaction and pageId. As 
+well, there is a method to check whether a given transaction can acquire a lock based on the 
+necessary permissions and there are methods to release a transactions lock and release a page’s 
+locks. 
+
+Within my database, all locks are acquired on the bufferpool getPage method. Therefore within the 
+heapfile class, I make sure that the permissions are appropriate: the iterator is Read-Only and 
+insert and delete are Read-Write permissions when explicitly editing the page but Read-Only when 
+trying to find the page to insert a tuple on. This allows the system to not have to consider 
+locking on the operator level, and only when actually acquiring pages for each operator. 
+
+I implemented a relatively simple deadlock detection policy for my database; my database follows 
+a timeout detection policy. This policy incrementally grants locks unless there is explicit 
+conflict with existing locks, and then it retroactively corrects if deadlock is detected. To 
+detect deadlock, if a transaction attempts to gain a lock from the lock manager for 200ms, and if 
+it remains unsuccessful in acquiring the lock, it declares it is in deadlock and aborts the 
+entire transaction, also releasing any other locks that this aborted transaction might hold such 
+that the other transactions can potentially finish without further deadlock. Each time a 
+transaction fails to get a lock, it will sleep for 15ms+random number between [0,10] to give other 
+transactions with the lock a chance to finish. As well, this policy assumes the transaction 
+currently holding the lock would have completed within 200ms if no deadlock was present. I chose 
+this policy because it did not restrict concurrency of transactions significantly, like other 
+policies that won’t grant a lock if it can lead to deadlock, and was also simple to implement 
+and resolve detected deadlocks. To resolve the deadlock, I just have the transaction that detected
+it (timed out first) abort it's transaction and release all its locks.
+
+
+
+
+
+

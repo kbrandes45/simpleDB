@@ -1,0 +1,52 @@
+Lab 3 WriteUp
+Kathleen Brandes
+
+For join ordering, I implemented the Selinger Join Algorithm which iteratively sets each 
+leftmost join of the query to be the one with the lowest cost, creating a left-deep tree. The 
+algorithm performs n iterations (for n = the number of joins), and on each iteration, it 
+enumerates all possible subsets of i joins (where i increases up to n), and computes the cost 
+of adding each node to the (i-1)-subset that has already been ordered. It then tracks the best 
+join ordering seen out of all of these enumerations, and caches this ordering. I also utilize 
+the plan cache to make these cost computations more efficient by storing the (i-1)-subset join 
+ordering costs and also to quickly determine which of the given join orderings computed is the 
+best.
+
+Additionally, for estimating table cardinalities for joins, I had joins on non-primary key 
+attributes return the larger cardinality of the two tables, and then joins over ranges returned 
+a portion (75%) of the cardinality of a cartesian product between the two joining tables 
+(bounded by the size of the larger table as well so that it will never result in a smaller 
+cardinality then an equality join on the same value). And for primary key - foreign key joins, 
+I followed standard procedure and had the cardinality estimate be the cardinality of the 
+foreign key table. 
+
+These different selectivity methods, both range and equality, rely on storing counts of the 
+number of tuples that fall within each given bucket range the histogram buckets in an array 
+with a uniform distribution. Bucket ranges are found by taking the (max-min)/(number of buckets). 
+For equality selectivity estimates, I compute the number of tuples for the bucket in which the 
+equality field falls under, and then I assume a uniform distribution of values and divide the 
+buckets total number of tuples by the range it covers to get an estimate for a single integer 
+value equality. For range selectivity estimates, I computed the number of tuple sin all the 
+buckets above or below (depending on the inequality sign) and also found the portion of the 
+bucket that the value fell into that applied to the range query to estimate the selectivity.
+
+The main API changes I made were to add private methods for the integer histogram class and 
+the table stats class. For the histograms, I added private functions to compute the different 
+selectivities for each kind of query (range and equality queries). For table stats, I added 
+private variables of hashmaps to store the string/integer histograms for each field of a given 
+table schema in addition to hashmaps to track the min and max value of each table field, which 
+is used in computing the histograms bucket ranges. Additionally, I have two methods that loop 
+over the table’s tuple values using the iterator: the first method populates the min/max 
+hashmap; the second method initializes and populates the histograms. Both of these methods are 
+called at initialization of the TableStats class object for a given table.
+
+There are no missing or incomplete elements from my code. I did not complete any of the extra 
+credit options. It successfully passed all JUnit tests for lab 3 (including all system tests 
+stated in the lab handout). 
+
+I spent approximately 12 hours on this lab. Nothing was particularly difficult. I think in 
+general it was a little bit challenging to make sure everything ran efficiently, such as the 
+initialization of table stats or the join ordering algorithm.
+
+
+
+
